@@ -212,14 +212,18 @@ These flags apply across multiple subcommands. Subcommand-specific flags (`--ana
 **Agent-timeout**: 30m       # optional, units required (s/m/h)
 **Category**: Backend        # optional, used to group reports
 
+### Requirements
+- req-tests-green: The workspace test suite passes.
+- req-health-endpoint: The service exposes a working /health endpoint.
+
 ### Description
 Free-form prose. Passed verbatim to the executor agent.
 
 ### Acceptance Criteria
-- [ ] cargo tests pass [shell: cargo test --workspace]
+- [ ] cargo tests pass [shell: cargo test --workspace] [proves:req-tests-green]
 - [ ] binary exists [file-exists: target/release/zurdo]
 - [ ] no panics in main [grep: panic! in src/main.rs]
-- [ ] /health returns 200 [http: GET http://localhost:8080/health -> 200]
+- [ ] /health returns 200 [http: GET http://localhost:8080/health -> 200] [proves:req-health-endpoint]
 - [ ] design review signed off [manual]
 ```
 
@@ -229,7 +233,10 @@ The load-bearing surprises:
 - The metadata block starts **immediately** after the `## Task:` heading — no blank line between them.
 - `**Effort**` and `**Depends-on**` are required on every task; `Effort` values must be keys in the active executor's `effort_map` (see [Configuration](#configuration)).
 - Every acceptance criterion is a `- [ ]` checkbox line and needs **at least one** hint; use `[manual]` if it's a human-review-only criterion.
+- Section headings under a task are a closed enum: `### Requirements` (optional), `### Description`, `### Acceptance Criteria` — in that order, order enforced.
 - `zurdo validate <prd>` checks all of this deterministically — run it before paying for tokens.
+
+**Requirement traceability (optional).** The `### Requirements` section names what the task must achieve, one bullet per requirement: `- <req-id>: <free-form text>`, where `req-id` matches `^req-[a-z0-9-]+$` and is unique within the task. A criterion can then link back with a `[proves:<req-id>]` modifier after its hints. `[proves:]` is not a hint — it runs no check and never gates the criterion; it declares that when the criterion passes, the named requirement has evidence. Validation enforces the links both ways: a `[proves:]` referencing an undeclared `req-id` is an error, and a declared requirement no criterion proves is surfaced as an uncovered-requirement warning by `--analyze`. Multiple criteria may prove the same requirement.
 
 The bundled `zurdo-prd-author` skill (see [Bundled skills](#bundled-skills)) teaches your agent CLI the full grammar and walks a PRD from intent to a `zurdo validate`-clean file.
 
